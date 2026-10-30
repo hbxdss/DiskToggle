@@ -1,0 +1,7 @@
+﻿*.obj
+*.exe
+*.pdb
+*.ilk
+*.idb
+build_out.txt
+build_err.txt
