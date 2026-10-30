@@ -75,4 +75,4 @@ MIT License
 
 ---
 
-> 🤖 This project was created with AI (Doubao) assistance.
+> 🤖 This project was created by AI.
