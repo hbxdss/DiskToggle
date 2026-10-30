@@ -1,5 +1,5 @@
 // DiskToggle.cpp - 图形化磁盘禁用/启用工具
-// 编译: cl /EHsc /O2 /DUNICODE /D_UNICODE DiskToggle.cpp user32.lib gdi32.lib setupapi.lib newdev.lib advapi32.lib shell32.lib /link /MANIFESTUAC:"level='requireAdministrator' uiAccess='false'" /SUBSYSTEM:WINDOWS
+// 编译: cl /EHsc /O2 /DUNICODE /D_UNICODE DiskToggle.cpp user32.lib gdi32.lib setupapi.lib newdev.lib advapi32.lib shell32.lib /link /SUBSYSTEM:WINDOWS
 
 #include <windows.h>
 #include <setupapi.h>
@@ -23,7 +23,6 @@
 #define IDC_STATUS    1005
 #define WM_REFRESH    (WM_USER + 100)
 
-// 磁盘驱动器设备类 GUID
 static const GUID GUID_DEVCLASS_DISKDRIVE =
     { 0x4d36e967, 0xe325, 0x11ce, { 0xbf, 0xc1, 0x08, 0x00, 0x2b, 0xe1, 0x03, 0x18 } };
 
@@ -36,7 +35,6 @@ static HWND hBtnDis = NULL, hBtnEn = NULL, hBtnRef = NULL;
 static HWND hStatus = NULL;
 static HINSTANCE hInst;
 
-// 从设备实例句柄获取友好名称
 static BOOL GetDeviceString(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did, DWORD prop, LPTSTR buf, DWORD bufLen) {
     if (SetupDiGetDeviceRegistryProperty(hDevInfo, did, prop, NULL, (PBYTE)buf, bufLen, NULL)) {
         return TRUE;
@@ -45,15 +43,12 @@ static BOOL GetDeviceString(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did, DWORD prop,
     return FALSE;
 }
 
-// 判断设备是否被禁用
 static BOOL IsDeviceDisabled(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did) {
     DWORD status = 0, prob = 0;
     CONFIGRET cr = CM_Get_DevNode_Status(&status, &prob, did->DevInst, 0);
     if (cr == CR_SUCCESS) {
-        if (status & DN_STARTED) return FALSE; // 正在工作
-        // 没启动，但可能是因为没驱动。用配置标志再判断
+        if (status & DN_STARTED) return FALSE;
     }
-    // 用配置标志判断
     DWORD cfgFlags = 0;
     if (SetupDiGetDeviceRegistryProperty(hDevInfo, did, SPDRP_CONFIGFLAGS, NULL,
             (PBYTE)&cfgFlags, sizeof(cfgFlags), NULL)) {
@@ -62,7 +57,6 @@ static BOOL IsDeviceDisabled(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did) {
     return FALSE;
 }
 
-// 禁用或启用设备
 static BOOL SetDeviceState(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did, BOOL bDisable) {
     SP_PROPCHANGE_PARAMS pcp;
     ZeroMemory(&pcp, sizeof(pcp));
@@ -81,7 +75,6 @@ static BOOL SetDeviceState(HDEVINFO hDevInfo, SP_DEVINFO_DATA* did, BOOL bDisabl
     return TRUE;
 }
 
-// 刷新列表
 static void RefreshList() {
     SendMessage(hList, LB_RESETCONTENT, 0, 0);
 
@@ -101,7 +94,6 @@ static void RefreshList() {
     while (SetupDiEnumDeviceInfo(hDevInfo, idx, &did)) {
         ZeroMemory(name, sizeof(name));
 
-        // 优先友好名称，否则用设备描述
         if (!GetDeviceString(hDevInfo, &did, SPDRP_FRIENDLYNAME, name, _countof(name))) {
             GetDeviceString(hDevInfo, &did, SPDRP_DEVICEDESC, name, _countof(name));
         }
@@ -112,7 +104,6 @@ static void RefreshList() {
         _stprintf_s(line, _countof(line), L"[%s]  %s",
             disabled ? L"已禁用" : L"使用中", name[0] ? name : L"(未知设备)");
         LRESULT lidx = SendMessage(hList, LB_ADDSTRING, 0, (LPARAM)line);
-        // 存设备实例索引
         SendMessage(hList, LB_SETITEMDATA, lidx, (LPARAM)idx);
 
         ZeroMemory(&did, sizeof(did));
@@ -127,7 +118,6 @@ static void RefreshList() {
     SendMessage(hStatus, WM_SETTEXT, 0, (LPARAM)buf);
 }
 
-// 获取当前选中设备的 devinst 索引
 static BOOL GetSelectedDevice(HDEVINFO* hDevInfo, SP_DEVINFO_DATA* did) {
     int sel = (int)SendMessage(hList, LB_GETCURSEL, 0, 0);
     if (sel == LB_ERR) return FALSE;
@@ -166,7 +156,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             WS_CHILD | WS_VISIBLE | SS_LEFT,
             10, 345, 560, 20, hWnd, (HMENU)IDC_STATUS, hInst, NULL);
 
-        // 更大字号
         HFONT hFont = CreateFont(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
             DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
             DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, L"Microsoft YaHei UI");
@@ -233,7 +222,6 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
     hInst = hInstance;
 
-    // 检查是否管理员
     BOOL isAdmin = FALSE;
     PSID adminGroup = NULL;
     SID_IDENTIFIER_AUTHORITY nt = SECURITY_NT_AUTHORITY;
